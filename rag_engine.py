@@ -4,13 +4,14 @@ from typing import List, Tuple
 
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
-from langchain_openai import OpenAIEmbeddings, ChatOpenAI
+from langchain_openai import OpenAIEmbeddings
 from langchain_community.document_loaders import PyPDFLoader, TextLoader
-from langchain_core.documents import Document
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_core.messages import HumanMessage, AIMessage
-from langchain.chains.combine_documents import create_stuff_documents_chain
-from langchain.chains import create_retrieval_chain, create_history_aware_retriever
+from openai import OpenAI
+
+
+SYSTEM_PROMPT = """You are a helpful assistant that answers questions based on the provided document context.
+Answer ONLY using the context below. If the answer is not in the context, say: "I couldn't find that in the uploaded document."
+Be concise and cite relevant parts of the context in your answer."""
 
 
 class RAGEngine:
@@ -21,11 +22,10 @@ class RAGEngine:
         self.chunk_overlap = chunk_overlap
         self.top_k = top_k
         self.embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
+        self.client = OpenAI(api_key=api_key)
         self.vectorstore = None
-        self.retriever = None
-        self.llm = None
 
-    def _load_file(self, uploaded_file) -> List[Document]:
+    def _load_file(self, uploaded_file) -> List:
         name = uploaded_file.name
         suffix = os.path.splitext(name)[-1].lower()
         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
@@ -55,51 +55,34 @@ class RAGEngine:
         if not chunks:
             raise ValueError("No text chunks produced.")
         self.vectorstore = FAISS.from_documents(chunks, self.embeddings)
-        self.retriever = self.vectorstore.as_retriever(
-            search_type="similarity", search_kwargs={"k": self.top_k}
-        )
-        self.llm = ChatOpenAI(model=self.model, temperature=0)
         return len(uploaded_files), len(chunks)
 
     def query(self, question: str, chat_history: list) -> Tuple[str, list]:
-        if self.retriever is None:
+        if self.vectorstore is None:
             raise RuntimeError("Index not built. Call build_index() first.")
 
-        # Build LangChain message history
-        lc_history = []
-        for msg in chat_history:
-            if msg["role"] == "user":
-                lc_history.append(HumanMessage(content=msg["content"]))
-            elif msg["role"] == "assistant":
-                lc_history.append(AIMessage(content=msg["content"]))
+        # Step 1: Retrieve top-k relevant chunks via FAISS similarity search
+        docs = self.vectorstore.similarity_search(question, k=self.top_k)
+        context = "\n\n---\n\n".join([d.page_content for d in docs])
 
-        # History-aware retriever: reformulates query given chat history
-        contextualize_prompt = ChatPromptTemplate.from_messages([
-            ("system", "Given the chat history and the latest user question, reformulate a standalone question. Return ONLY the question, no explanation."),
-            MessagesPlaceholder("chat_history"),
-            ("human", "{input}"),
-        ])
-        history_aware_retriever = create_history_aware_retriever(
-            self.llm, self.retriever, contextualize_prompt
+        # Step 2: Build messages for OpenAI — include chat history for memory
+        messages = [{"role": "system", "content": SYSTEM_PROMPT + "\n\nContext:\n" + context}]
+        for msg in chat_history[-6:]:  # last 3 turns for context window efficiency
+            messages.append({"role": msg["role"], "content": msg["content"]})
+        messages.append({"role": "user", "content": question})
+
+        # Step 3: Call OpenAI directly — no LangChain chains needed
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=messages,
+            temperature=0,
         )
+        answer = response.choices[0].message.content
 
-        # QA chain
-        qa_prompt = ChatPromptTemplate.from_messages([
-            ("system", "You are a helpful assistant. Answer the question using ONLY the context below. If the answer is not in the context, say so.\n\nContext:\n{context}"),
-            MessagesPlaceholder("chat_history"),
-            ("human", "{input}"),
-        ])
-        qa_chain = create_stuff_documents_chain(self.llm, qa_prompt)
-        rag_chain = create_retrieval_chain(history_aware_retriever, qa_chain)
-
-        result = rag_chain.invoke({"input": question, "chat_history": lc_history})
-
-        answer = result["answer"]
-        source_docs = result.get("context", [])
-
+        # Step 4: Build deduplicated source list
         seen = set()
         sources = []
-        for doc in source_docs:
+        for doc in docs:
             snippet = doc.page_content[:100]
             if snippet not in seen:
                 seen.add(snippet)
