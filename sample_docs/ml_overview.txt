@@ -1,0 +1,29 @@
+Machine Learning: A Comprehensive Overview
+
+What is Machine Learning?
+Machine Learning (ML) is a subset of Artificial Intelligence (AI) that enables systems to learn and improve from experience without being explicitly programmed.
+
+Types of Machine Learning:
+1. Supervised Learning - uses labeled data. Examples: Linear Regression, Random Forest, SVM.
+2. Unsupervised Learning - finds hidden patterns. Examples: K-Means, PCA, DBSCAN.
+3. Reinforcement Learning - agent learns via rewards/penalties. Used in robotics, games.
+
+Key Concepts:
+- Overfitting: model memorizes training data, fails on new data
+- Cross-Validation: K-Fold technique to evaluate model generalization
+- Feature Engineering: transforming raw data into useful model inputs
+- Evaluation Metrics: Accuracy, Precision, Recall, F1-Score, ROC-AUC, MSE
+
+Popular ML Frameworks: Scikit-learn, TensorFlow, PyTorch, XGBoost, Keras
+
+Real-World Applications:
+- Healthcare: disease prediction, medical imaging
+- Finance: fraud detection, credit scoring
+- E-commerce: recommendation systems, churn prediction
+- NLP: sentiment analysis, chatbots, translation
+
+ML Pipeline Steps:
+1. Problem Definition -> 2. Data Collection -> 3. EDA -> 4. Preprocessing
+5. Feature Engineering -> 6. Model Training -> 7. Evaluation -> 8. Deployment -> 9. Monitoring
+
+Current Trends: LLMs, RAG pipelines, MLOps, AutoML, Federated Learning, Explainable AI
