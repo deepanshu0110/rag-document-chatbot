@@ -15,11 +15,22 @@ Be concise and cite relevant parts of the context in your answer."""
 
 
 class RAGEngine:
-    def __init__(self, api_key, model="gpt-3.5-turbo", chunk_size=500, chunk_overlap=50, top_k=4):
-        self.model = model
-        self.chunk_size = chunk_size
+    """
+    RAG engine supporting two backends:
+    - "openai"  : OpenAI GPT (gpt-3.5-turbo / gpt-4o-mini / gpt-4o)
+    - "ollama"  : Fully local, free — requires Ollama running at localhost:11434
+                  Install: https://ollama.com  |  Pull a model: ollama pull llama3.2
+    """
+
+    def __init__(self, api_key="", model="gpt-3.5-turbo",
+                 chunk_size=500, chunk_overlap=50, top_k=4,
+                 backend="openai", ollama_base_url="http://localhost:11434"):
+        self.model    = model
+        self.chunk_size    = chunk_size
         self.chunk_overlap = chunk_overlap
-        self.top_k = top_k
+        self.top_k    = top_k
+        self.backend  = backend
+        self.ollama_base_url = ollama_base_url
 
         # Free local embeddings via sentence-transformers — no API cost
         self.embeddings = HuggingFaceEmbeddings(
@@ -27,7 +38,17 @@ class RAGEngine:
             model_kwargs={"device": "cpu"},
             encode_kwargs={"normalize_embeddings": True},
         )
-        self.client = OpenAI(api_key=api_key)
+
+        # LLM client — OpenAI or Ollama (OpenAI-compatible API)
+        if backend == "ollama":
+            # Ollama exposes an OpenAI-compatible endpoint — zero extra dependencies
+            self.client = OpenAI(
+                api_key="ollama",           # placeholder, not validated by Ollama
+                base_url=f"{ollama_base_url}/v1",
+            )
+        else:
+            self.client = OpenAI(api_key=api_key)
+
         self.vectorstore = None
 
     def _load_file(self, uploaded_file) -> List:
