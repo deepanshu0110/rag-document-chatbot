@@ -4,7 +4,7 @@ from typing import List, Tuple
 
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
-from langchain_openai import OpenAIEmbeddings
+from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.document_loaders import PyPDFLoader, TextLoader
 from openai import OpenAI
 
@@ -16,12 +16,17 @@ Be concise and cite relevant parts of the context in your answer."""
 
 class RAGEngine:
     def __init__(self, api_key, model="gpt-3.5-turbo", chunk_size=500, chunk_overlap=50, top_k=4):
-        os.environ["OPENAI_API_KEY"] = api_key
         self.model = model
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
         self.top_k = top_k
-        self.embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
+
+        # Free local embeddings via sentence-transformers — no API cost
+        self.embeddings = HuggingFaceEmbeddings(
+            model_name="all-MiniLM-L6-v2",
+            model_kwargs={"device": "cpu"},
+            encode_kwargs={"normalize_embeddings": True},
+        )
         self.client = OpenAI(api_key=api_key)
         self.vectorstore = None
 
@@ -71,7 +76,7 @@ class RAGEngine:
             messages.append({"role": msg["role"], "content": msg["content"]})
         messages.append({"role": "user", "content": question})
 
-        # Step 3: Call OpenAI directly — no LangChain chains needed
+        # Step 3: Call OpenAI for answer generation
         response = self.client.chat.completions.create(
             model=self.model,
             messages=messages,
