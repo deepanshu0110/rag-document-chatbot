@@ -96,3 +96,45 @@ class RAGEngine:
                     "content": doc.page_content,
                 })
         return answer, sources
+
+    def query_stream(self, question: str, chat_history: list):
+        """
+        Streaming version of query() — yields text chunks as they arrive.
+        Use with st.write_stream() in Streamlit for real-time response display.
+        """
+        if self.vectorstore is None:
+            raise RuntimeError("Index not built. Call build_index() first.")
+
+        docs = self.vectorstore.similarity_search(question, k=self.top_k)
+        context = "\n\n---\n\n".join([d.page_content for d in docs])
+
+        messages = [{"role": "system", "content": SYSTEM_PROMPT + "\n\nContext:\n" + context}]
+        for msg in chat_history[-6:]:
+            messages.append({"role": msg["role"], "content": msg["content"]})
+        messages.append({"role": "user", "content": question})
+
+        # Stream response token by token
+        stream = self.client.chat.completions.create(
+            model=self.model,
+            messages=messages,
+            temperature=0,
+            stream=True,
+        )
+        full_answer = ""
+        for chunk in stream:
+            delta = chunk.choices[0].delta.content or ""
+            full_answer += delta
+            yield delta
+
+        # Build sources after streaming completes
+        seen = set()
+        self._last_sources = []
+        for doc in docs:
+            snippet = doc.page_content[:100]
+            if snippet not in seen:
+                seen.add(snippet)
+                self._last_sources.append({
+                    "source": doc.metadata.get("source", "Unknown"),
+                    "content": doc.page_content,
+                })
+
