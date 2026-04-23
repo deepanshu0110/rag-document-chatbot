@@ -1,4 +1,6 @@
 # RAG Document Chatbot
+[![CI](https://github.com/deepanshu0110/rag-document-chatbot/actions/workflows/ci.yml/badge.svg)](https://github.com/deepanshu0110/rag-document-chatbot/actions)
+
 
 ![Python](https://img.shields.io/badge/Python-3.9+-blue?style=flat-square&logo=python)
 ![LangChain](https://img.shields.io/badge/LangChain-0.2+-green?style=flat-square)
