@@ -30,17 +30,23 @@ with st.sidebar:
     st.title("⚙️ Configuration")
     st.markdown("---")
 
-    api_key = st.text_input(
-        "🔑 OpenAI API Key",
-        type="password",
-        placeholder="sk-...",
-        help="Get your key at platform.openai.com"
-    )
+    backend = st.radio("🖥️ LLM Backend", ["☁️ OpenAI (cloud)", "🏠 Ollama (local, free)"],
+                       help="Ollama runs models locally — no API key or internet needed.")
 
-    model_choice = st.selectbox(
-        "🧠 LLM Model",
-        ["gpt-3.5-turbo", "gpt-4o-mini", "gpt-4o"],
-    )
+    if backend == "☁️ OpenAI (cloud)":
+        api_key = st.text_input(
+            "🔑 OpenAI API Key", type="password",
+            placeholder="sk-...", help="Get your key at platform.openai.com"
+        )
+        model_choice = st.selectbox("🧠 Model", ["gpt-3.5-turbo", "gpt-4o-mini", "gpt-4o"])
+    else:
+        api_key = "ollama"  # sentinel
+        model_choice = st.selectbox(
+            "🧠 Ollama Model",
+            ["llama3", "mistral", "phi3", "gemma2"],
+            help="Run `ollama pull llama3` to download the model first."
+        )
+        st.caption("Make sure Ollama is running: `ollama serve`")
 
     chunk_size    = st.slider("📄 Chunk Size",    200, 1000, 500, 50)
     chunk_overlap = st.slider("🔗 Chunk Overlap",   0,  200,  50, 10)
