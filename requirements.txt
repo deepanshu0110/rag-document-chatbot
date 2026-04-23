@@ -7,3 +7,5 @@ openai>=1.30.0
 pypdf>=4.0.0
 streamlit>=1.32.0
 python-dotenv>=1.0.0
+# Ollama backend uses OpenAI-compatible API — no extra package needed
+# Install Ollama itself from: https://ollama.com
