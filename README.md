@@ -60,6 +60,17 @@ streamlit run app.py
 
 ---
 
+## Tests
+
+```bash
+pip install pytest
+pytest tests/ -v
+```
+
+The tests builds a FAISS index from `sample_docs/`, retrieves chunks and checks the prompt sent to the LLM (the LLM call is stubbed, so no API key is needed). GitHub Actions runs them on every push.
+
+---
+
 ## Tech Stack
 
 Python · LangChain · FAISS · sentence-transformers · OpenAI · PyPDF · Streamlit
