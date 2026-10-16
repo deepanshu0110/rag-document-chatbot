@@ -8,7 +8,7 @@
 ![FAISS](https://img.shields.io/badge/FAISS-Vector%20Search-orange?style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)
 
-Upload any PDF or TXT and ask questions. Uses free local embeddings, FAISS vector search, and OpenAI GPT for answers with source citations.
+Upload any PDF or TXT and ask questions. Uses free local embeddings, FAISS vector search, and either OpenAI GPT or a local Ollama model for answers with source citations.
 
 ---
 
@@ -21,7 +21,7 @@ Professionals waste hours scanning long documents. This tool lets anyone ask pla
 ## Architecture
 
 ```
-Upload PDF/TXT → Chunk → Embed (free, local) → FAISS → Query → OpenAI GPT → Answer + Citations
+Upload PDF/TXT → Chunk → Embed (free, local) → FAISS → Query → OpenAI GPT or Ollama → Answer + Citations
 ```
 
 ---
@@ -32,9 +32,9 @@ Upload PDF/TXT → Chunk → Embed (free, local) → FAISS → Query → OpenAI 
 |---|---|
 | Free embeddings | all-MiniLM-L6-v2 via sentence-transformers — no API cost |
 | Local vector search | FAISS in-memory — no external database |
-| Conversational memory | Remembers last 5 turns |
+| Conversational memory | Sends the last 3 question-answer turns with each query |
 | Source citations | Every answer links to source chunks |
-| Model selector | Switch between gpt-3.5-turbo, gpt-4o-mini, gpt-4o |
+| Model selector | OpenAI (gpt-3.5-turbo, gpt-4o-mini, gpt-4o) or local Ollama (no API key) |
 
 ---
 
@@ -70,7 +70,6 @@ Python · LangChain · FAISS · sentence-transformers · OpenAI · PyPDF · Stre
 
 - [ ] DOCX, CSV, Markdown support
 - [ ] Persistent FAISS index
-- [ ] Ollama local LLM (fully offline)
 - [ ] Streamlit Cloud deployment
 
 ---
